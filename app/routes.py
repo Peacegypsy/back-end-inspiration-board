@@ -14,12 +14,13 @@ hello_world_bp = Blueprint("hello_world", __name__)
 
 load_dotenv()
 
-
+#Basic route to test if the server is running
 @hello_world_bp.route("/hello-world", methods=["GET"])
 def hello_world():
     my_beautiful_response_body = "Hello, World!"
     return my_beautiful_response_body
 
+#method to post message to slack
 def post_message_to_slack(text):
     SLACK_TOKEN = os.environ.get('SLACKBOT_TOKEN')
     client = WebClient(token=SLACK_TOKEN)
@@ -31,7 +32,7 @@ def post_message_to_slack(text):
     except SlackApiError as e:
         assert e.response["error"]
 
-
+#routes for getting all boards and creating a new board
 @boards_bp.route("", methods=["GET", "POST"])
 def handle_boards():
     if request.method == "GET":
@@ -57,7 +58,7 @@ def handle_boards():
 
     return make_response(f"Board {new_board.title} successfully created", 201)
 
-
+#routes for getting a specific board, updating a board, and deleting a board
 @boards_bp.route("/<board_id>", methods=["GET", "PUT", "DELETE"])
 def handle_board(board_id):
     board = Board.query.get_or_404(board_id)
@@ -94,7 +95,7 @@ def handle_board(board_id):
         return make_response(f"Board: {board.title} sucessfully deleted.")
 # example_bp = Blueprint('example_bp', __name__)
 
-
+#route for getting all cards in a board and making a new card
 @boards_bp.route("/<board_id>/cards", methods=["POST", "GET"])
 def handle_cards(board_id):
     board = Board.query.get(board_id)
@@ -133,3 +134,24 @@ def handle_cards(board_id):
                 "message": new_card.message
             }
         }, 201
+
+#route for getting a specific card and deleting a card     
+@boards_bp.route("/<board_id>/<card_id>", methods=["DELETE", "GET", "PUT"])
+def handle_card(board_id, card_id):
+    card = Card.query.get_or_404(card_id)
+    if request.method == "GET":
+        return make_response(
+            {
+                "message": card.message
+            }, 200)
+    elif request.method == "PUT":
+        form_data = request.get_json()
+        card.message = form_data["message"]
+
+        db.session.commit()
+
+        return make_response(f"Card: {card.message} sucessfully updated.", 200)
+    else :
+        db.session.delete(card)
+        db.session.commit()
+        return make_response(f"Card: {card.message} sucessfully deleted.", 200)
