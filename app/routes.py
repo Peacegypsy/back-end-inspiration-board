@@ -151,7 +151,7 @@ def handle_card(board_id, card_id):
         db.session.commit()
 
         return make_response(f"Card: {card.message} sucessfully updated.", 200)
-    else :
+    elif request.method == "DELETE": 
         db.session.delete(card)
         db.session.commit()
         return make_response(f"Card: {card.message} sucessfully deleted.", 200)
